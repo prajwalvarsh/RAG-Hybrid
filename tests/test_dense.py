@@ -3,7 +3,7 @@
 import pytest
 
 from retrieval.dense import retrieve_dense
-from retrieval.schemas import RetrievalRequest, RetrievalResult
+from retrieval.schemas import RetrievalMethod, RetrievalRequest, RetrievalResult
 
 _EMBED_DIM = 8
 
@@ -157,4 +157,4 @@ def test_retrieve_dense_retrieval_method(
     results = retrieve_dense(base_request)
 
     for r in results:
-        assert r.retrieval_method == "dense"
+        assert r.retrieval_method == RetrievalMethod.DENSE
