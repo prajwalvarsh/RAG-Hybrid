@@ -1,6 +1,14 @@
 # retrieval/schemas.py
 
+from enum import Enum
+
 from pydantic import BaseModel
+
+
+class RetrievalMethod(str, Enum):
+    DENSE = "dense"
+    SPARSE = "sparse"
+    HYBRID = "hybrid"
 
 
 class RetrievalResult(BaseModel):
@@ -11,7 +19,7 @@ class RetrievalResult(BaseModel):
     score: float
     rank: int
     metadata: dict
-    retrieval_method: str  # "dense" | "sparse" | "hybrid"
+    retrieval_method: RetrievalMethod
 
 
 class RetrievalRequest(BaseModel):

@@ -4,7 +4,7 @@ import logging
 
 from ingest import model as _model_mod
 from ingest.indexer import get_collection
-from retrieval.schemas import RetrievalRequest, RetrievalResult
+from retrieval.schemas import RetrievalMethod, RetrievalRequest, RetrievalResult
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def retrieve_dense(request: RetrievalRequest) -> list[RetrievalResult]:
                 score=1.0 - distance,
                 rank=rank_zero + 1,
                 metadata=metadata,
-                retrieval_method="dense",
+                retrieval_method=RetrievalMethod.DENSE,
             )
         )
 
