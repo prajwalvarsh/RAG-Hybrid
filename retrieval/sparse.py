@@ -96,7 +96,13 @@ def get_bm25_index(
     if not _BM25_BUILT or force_rebuild:
         _build_bm25_index(collection_name)
 
-    return _BM25_INDEX  # type: ignore[return-value]
+    if _BM25_INDEX is None:
+        raise RuntimeError(
+            "BM25 index is empty — ingest documents before querying. "
+            f"Collection '{collection_name}' returned no documents."
+        )
+
+    return _BM25_INDEX
 
 
 # ---------------------------------------------------------------------------
@@ -124,9 +130,9 @@ def retrieve_sparse(request: RetrievalRequest) -> list[RetrievalResult]:
         starting at 1. Returns an empty list when the index is empty or when
         no chunk shares any token with the query.
     """
-    index = get_bm25_index(request.collection_name)
-
-    if not _BM25_CHUNK_IDS:
+    try:
+        index = get_bm25_index(request.collection_name)
+    except RuntimeError:
         logger.warning(
             "BM25 index for collection '%s' is empty — returning no results for query: %r",
             request.collection_name,
