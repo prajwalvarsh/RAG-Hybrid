@@ -12,7 +12,7 @@ Built as a portfolio project targeting AI/ML Engineer roles for me (Prajwal Amog
 - FastAPI — API layer
 - ChromaDB — vector store (dense retrieval)
 - rank_bm25 — sparse keyword retrieval
-- OpenAI text-embedding-3-small — embeddings
+- BAAI/bge-base-en-v1.5 — embeddings (local, via sentence-transformers)
 - Reciprocal Rank Fusion (RRF) — combining dense + sparse results
 - RAGAS — evaluation metrics
 - Docker — containerization

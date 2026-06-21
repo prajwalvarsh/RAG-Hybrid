@@ -49,6 +49,9 @@ Running two different search methods and combining their results.
 
 ### Dense retrieval
 - Converts the query into an embedding vector
+- Embedding model: BAAI/bge-base-en-v1.5 via sentence-transformers
+  Runs fully locally — no API key required
+  Dimensions: 768
 - Finds chunks whose embeddings are closest (cosine similarity)
 - Good at: conceptual matches, synonyms, paraphrasing
 - Bad at: exact keywords, product codes, proper nouns

@@ -41,7 +41,7 @@ Write tests in tests/test_chunker.py."
 
 **Task prompt:**
 "Read CLAUDE.md. Build ingest/embedder.py that takes a list
-of Chunk objects and calls OpenAI text-embedding-3-small to
+of Chunk objects and calls BAAI/bge-base-en-v1.5 to
 return embeddings. Build ingest/indexer.py that stores chunks
 and their embeddings in ChromaDB. Add docstrings to everything."
 
