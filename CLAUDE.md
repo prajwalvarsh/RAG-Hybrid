@@ -43,6 +43,16 @@ Phase 1 — Ingestion pipeline
 - ChromaDB collection uses cosine distance (hnsw:space: cosine)
   Consistent with normalized embeddings — do not change to L2
 
+
+## Coding conventions
+- Pydantic BaseModel for all data contracts, never TypedDict or dataclass
+- Enums for all fixed-value fields (FileType, ChunkStrategy, RetrievalMethod)
+- Lazy singleton pattern for expensive resources (model, ChromaDB client)
+- logging not print statements everywhere
+- Docstrings on every function explaining what and why
+- One module per responsibility — no cross-module side effects
+
+
 ## Rules for Claude
 - Never modify anything inside eval/golden/ — that is the ground truth
 - Never change the Pydantic schemas without asking me first
