@@ -37,6 +37,11 @@ Phase 1 — Ingestion pipeline
 - RRF weights: start at 0.7 dense / 0.3 sparse, tune after eval
 - Embedding model: text-embedding-3-small (cost vs quality tradeoff)
 - No LangChain — building retrieval logic from scratch to understand it
+- Embeddings normalized at encode time (normalize_embeddings=True)
+  BGE models are trained for cosine similarity — unit vectors ensure
+  retrieval ranks by semantic direction not vector magnitude
+- ChromaDB collection uses cosine distance (hnsw:space: cosine)
+  Consistent with normalized embeddings — do not change to L2
 
 ## Rules for Claude
 - Never modify anything inside eval/golden/ — that is the ground truth

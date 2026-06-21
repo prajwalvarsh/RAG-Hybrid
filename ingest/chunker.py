@@ -7,23 +7,13 @@ from typing import Callable
 import nltk
 import numpy as np
 import tiktoken
-from sentence_transformers import SentenceTransformer
 
+from ingest import model as _model_mod
 from ingest.schemas import Chunk, ChunkMetadata, ChunkStrategy, Document
 
 logger = logging.getLogger(__name__)
 
 _ENCODING = tiktoken.get_encoding("cl100k_base")
-_EMBEDDING_MODEL: SentenceTransformer | None = None
-
-
-def _get_embedding_model() -> SentenceTransformer:
-    """Return the shared SentenceTransformer instance, loading it on first call."""
-    global _EMBEDDING_MODEL
-    if _EMBEDDING_MODEL is None:
-        logger.info("Loading embedding model BAAI/bge-base-en-v1.5")
-        _EMBEDDING_MODEL = SentenceTransformer("BAAI/bge-base-en-v1.5")
-    return _EMBEDDING_MODEL
 
 
 def _token_count(text: str) -> int:
@@ -194,7 +184,7 @@ def chunk_semantic(
     if not sentences:
         return []
 
-    model = _get_embedding_model()
+    model = _model_mod.get_embedding_model()
     raw: np.ndarray = model.encode(sentences)
     embeddings: list[list[float]] = raw.tolist()
 

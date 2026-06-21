@@ -169,10 +169,10 @@ def _make_embedding(value: float, dim: int = 8) -> list[float]:
 
 
 def _mock_model(mocker, embeddings: list[list[float]]):
-    """Patch _get_embedding_model to return a mock whose .encode() returns a numpy array."""
+    """Patch ingest.model.get_embedding_model to return a mock whose .encode() returns a numpy array."""
     mock_model = mocker.MagicMock()
     mock_model.encode.return_value = np.array(embeddings)
-    mocker.patch("ingest.chunker._get_embedding_model", return_value=mock_model)
+    mocker.patch("ingest.model.get_embedding_model", return_value=mock_model)
     return mock_model
 
 

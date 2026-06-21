@@ -56,6 +56,12 @@ Running two different search methods and combining their results.
 - Good at: conceptual matches, synonyms, paraphrasing
 - Bad at: exact keywords, product codes, proper nouns
 
+### Normalization note
+BGE models must be encoded with normalize_embeddings=True.
+ChromaDB collection must use hnsw:space: cosine.
+These two settings are coupled — changing one without the other
+produces inconsistent retrieval results.
+
 ### Sparse retrieval (BM25)
 - Classic keyword matching with frequency weighting
 - Finds chunks that contain the exact words from the query
