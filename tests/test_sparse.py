@@ -117,11 +117,23 @@ def test_retrieve_sparse_retrieval_method(
 def test_retrieve_sparse_empty_collection(
     mocker, base_request: RetrievalRequest
 ) -> None:
-    """retrieve_sparse must return an empty list when the collection is empty."""
+    """retrieve_sparse must return [] and get_bm25_index must raise RuntimeError when empty.
+
+    get_bm25_index raises RuntimeError so callers get an explicit signal that
+    the index was never populated. retrieve_sparse catches it and degrades
+    gracefully so dense retrieval can still serve results in a hybrid pipeline.
+    """
+    from retrieval.sparse import get_bm25_index
+
+    _make_collection(mocker, ids=[], documents=[])
+
+    with pytest.raises(RuntimeError, match="BM25 index is empty"):
+        get_bm25_index(base_request.collection_name)
+
+    _reset_index()
     _make_collection(mocker, ids=[], documents=[])
 
     results = retrieve_sparse(base_request)
-
     assert results == []
 
 
