@@ -3,7 +3,7 @@
 import logging
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from groq import Groq
 
 from generation.citation import compute_support_score, verify_citations
 from generation.schemas import GenerationResult
@@ -62,33 +62,33 @@ def build_prompt(query: str, chunks: list[RetrievalResult]) -> str:
 def generate(
     query: str,
     chunks: list[RetrievalResult],
-    model: str = "gpt-4o-mini",
+    model: str = "llama-3.1-8b-instant",
 ) -> GenerationResult:
     """Generate a grounded answer and verify every citation it contains.
 
     Steps:
     1. Build a grounded prompt via build_prompt().
-    2. Call the OpenAI Chat Completions API.
+    2. Call the Groq Chat Completions API.
     3. Extract the answer text from the response.
     4. Run citation verification against the retrieved chunks.
     5. Compute the overall support score.
     6. Return a fully populated GenerationResult.
 
-    OpenAI API errors are logged at ERROR level and re-raised so callers
+    Groq API errors are logged at ERROR level and re-raised so callers
     can decide on retry / fallback behaviour.
 
     Args:
         query:  The user's question.
         chunks: Ranked retrieval results to ground the answer.
-        model:  OpenAI model identifier (default: "gpt-4o-mini").
+        model:  Groq model identifier (default: "llama-3.1-8b-instant").
 
     Returns:
         GenerationResult with the answer, citation audit, and metadata.
     """
     prompt = build_prompt(query, chunks)
-    client = OpenAI()
+    client = Groq()
 
-    logger.info("Calling OpenAI model=%s for query: %r", model, query)
+    logger.info("Calling Groq model=%s for query: %r", model, query)
 
     try:
         response = client.chat.completions.create(
@@ -96,7 +96,7 @@ def generate(
             messages=[{"role": "user", "content": prompt}],
         )
     except Exception as exc:
-        logger.error("OpenAI API error for query %r: %s", query, exc)
+        logger.error("Groq API error for query %r: %s", query, exc)
         raise
 
     answer = response.choices[0].message.content or ""

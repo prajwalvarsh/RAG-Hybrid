@@ -88,7 +88,7 @@ def test_generate_returns_correct_type(mocker) -> None:
 
     mock_client = mocker.MagicMock()
     mock_client.chat.completions.create.return_value = mock_response
-    mocker.patch("generation.generator.OpenAI", return_value=mock_client)
+    mocker.patch("generation.generator.Groq", return_value=mock_client)
 
     mocker.patch(
         "generation.generator.verify_citations",
@@ -100,7 +100,7 @@ def test_generate_returns_correct_type(mocker) -> None:
 
     assert isinstance(result, GenerationResult)
     assert result.query == "Where is Munich?"
-    assert result.model == "gpt-4o-mini"
+    assert result.model == "llama-3.1-8b-instant"
     assert result.chunks_used == ["c1"]
 
 
@@ -113,7 +113,7 @@ def test_generate_populates_answer(mocker) -> None:
 
     mock_client = mocker.MagicMock()
     mock_client.chat.completions.create.return_value = mock_response
-    mocker.patch("generation.generator.OpenAI", return_value=mock_client)
+    mocker.patch("generation.generator.Groq", return_value=mock_client)
     mocker.patch("generation.generator.verify_citations", return_value=[])
 
     chunks = [_make_chunk("c1", "Context text.")]
@@ -123,12 +123,10 @@ def test_generate_populates_answer(mocker) -> None:
 
 
 def test_generate_handles_api_error(mocker) -> None:
-    """generate must log OpenAI errors and re-raise them."""
-    from openai import APIError
-
+    """generate must log Groq errors and re-raise them."""
     mock_client = mocker.MagicMock()
     mock_client.chat.completions.create.side_effect = RuntimeError("network failure")
-    mocker.patch("generation.generator.OpenAI", return_value=mock_client)
+    mocker.patch("generation.generator.Groq", return_value=mock_client)
 
     mock_logger = mocker.patch("generation.generator.logger")
 
@@ -147,7 +145,7 @@ def test_generate_uses_custom_model(mocker) -> None:
 
     mock_client = mocker.MagicMock()
     mock_client.chat.completions.create.return_value = mock_response
-    mocker.patch("generation.generator.OpenAI", return_value=mock_client)
+    mocker.patch("generation.generator.Groq", return_value=mock_client)
     mocker.patch("generation.generator.verify_citations", return_value=[])
 
     chunks = [_make_chunk("c1", "Context.")]

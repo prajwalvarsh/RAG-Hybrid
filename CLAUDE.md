@@ -14,6 +14,8 @@ Built as a portfolio project targeting AI/ML Engineer roles for me (Prajwal Amog
 - rank_bm25 — sparse keyword retrieval
 - BAAI/bge-base-en-v1.5 — embeddings (local, via sentence-transformers)
 - Reciprocal Rank Fusion (RRF) — combining dense + sparse results
+- llama-3.1-8b-instant via Groq API — generation + citation verification
+  (OpenAI-compatible interface, free tier)
 - RAGAS — evaluation metrics
 - Docker — containerization
 

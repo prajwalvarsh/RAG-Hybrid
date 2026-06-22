@@ -5,7 +5,7 @@ import logging
 import re
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from groq import Groq
 
 from generation.schemas import CitationStatus, CitationVerification
 from retrieval.schemas import RetrievalResult
@@ -41,11 +41,11 @@ def extract_citations(answer: str) -> list[tuple[str, int]]:
 def verify_citations(
     answer: str,
     chunks: list[RetrievalResult],
-    client: OpenAI | None = None,
+    client: Groq | None = None,
 ) -> list[CitationVerification]:
     """Verify every citation in the answer against the retrieved chunks.
 
-    All in-range citations are verified in a single batched OpenAI call that
+    All in-range citations are verified in a single batched Groq call that
     asks the model to return a JSON array of yes/no verdicts — one per claim —
     in a single round-trip rather than one API call per citation.  This keeps
     API cost proportional to answer length rather than citation count.
@@ -64,7 +64,7 @@ def verify_citations(
     Args:
         answer: The generated answer text containing bracketed citations.
         chunks: Retrieved chunks in rank order (1-based citation indexing).
-        client: Optional OpenAI client. A new client is created from the
+        client: Optional Groq client. A new client is created from the
                 environment when not provided, allowing tests to inject a
                 mock directly without module-level patching.
 
@@ -76,7 +76,7 @@ def verify_citations(
         return []
 
     if client is None:
-        client = OpenAI()
+        client = Groq()
 
     # Pre-allocate result slots; fill out-of-range entries immediately.
     results: list[CitationVerification | None] = [None] * len(pairs)
@@ -114,7 +114,7 @@ def verify_citations(
 def _fill_results(
     pending: list[_Pending],
     results: list[CitationVerification | None],
-    client: OpenAI,
+    client: Groq,
 ) -> None:
     """Try batch verification; fall back to per-citation on any failure."""
     prompt_lines = [
@@ -130,7 +130,7 @@ def _fill_results(
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": batch_prompt}],
             max_tokens=200,
         )
@@ -176,7 +176,7 @@ def _fill_results(
 def _fill_per_citation(
     pending: list[_Pending],
     results: list[CitationVerification | None],
-    client: OpenAI,
+    client: Groq,
 ) -> None:
     """Verify citations one at a time (fallback path)."""
     for i, claim, citation_number, chunk in pending:
@@ -188,7 +188,7 @@ def _fill_per_citation(
         )
         try:
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=5,
             )

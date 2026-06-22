@@ -17,3 +17,8 @@ data/raw/*
 
 # Pytest
 .pytest_cache/*
+
+
+.env
+
+IMPROVEMENTS.md

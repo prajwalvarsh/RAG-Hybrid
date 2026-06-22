@@ -19,6 +19,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "tiktoken>=0.7.0",
     "nltk>=3.8.0",
+    "groq>=1.5.0",
 ]
 
 [project.optional-dependencies]
