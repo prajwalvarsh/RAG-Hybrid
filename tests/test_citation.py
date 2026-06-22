@@ -146,18 +146,19 @@ def test_compute_support_score_unverified_not_counted() -> None:
 
 
 def test_verify_citations_supported(mocker) -> None:
-    """A 'yes' reply from the LLM must produce a SUPPORTED CitationVerification."""
+    """A batch 'yes' verdict must produce a SUPPORTED CitationVerification."""
     mock_response = mocker.MagicMock()
-    mock_response.choices[0].message.content = "yes"
+    mock_response.choices[0].message.content = (
+        '[{"supported": "yes", "confidence": 1.0}]'
+    )
 
     mock_client = mocker.MagicMock()
     mock_client.chat.completions.create.return_value = mock_response
-    mocker.patch("generation.citation.OpenAI", return_value=mock_client)
 
     chunks = [_make_chunk("c1", "Munich is the capital of Bavaria.")]
     answer = "Munich is in Bavaria [1]."
 
-    results = verify_citations(answer, chunks)
+    results = verify_citations(answer, chunks, client=mock_client)
 
     assert len(results) == 1
     assert results[0].supported == CitationStatus.SUPPORTED
@@ -167,18 +168,19 @@ def test_verify_citations_supported(mocker) -> None:
 
 
 def test_verify_citations_unsupported(mocker) -> None:
-    """A 'no' reply from the LLM must produce an UNSUPPORTED CitationVerification."""
+    """A batch 'no' verdict must produce an UNSUPPORTED CitationVerification."""
     mock_response = mocker.MagicMock()
-    mock_response.choices[0].message.content = "no"
+    mock_response.choices[0].message.content = (
+        '[{"supported": "no", "confidence": 1.0}]'
+    )
 
     mock_client = mocker.MagicMock()
     mock_client.chat.completions.create.return_value = mock_response
-    mocker.patch("generation.citation.OpenAI", return_value=mock_client)
 
     chunks = [_make_chunk("c1", "Unrelated content.")]
     answer = "Munich is in Bavaria [1]."
 
-    results = verify_citations(answer, chunks)
+    results = verify_citations(answer, chunks, client=mock_client)
 
     assert len(results) == 1
     assert results[0].supported == CitationStatus.UNSUPPORTED
@@ -187,12 +189,12 @@ def test_verify_citations_unsupported(mocker) -> None:
 
 def test_verify_citations_out_of_range(mocker) -> None:
     """A citation number that exceeds the chunk list must be marked UNVERIFIED."""
-    mocker.patch("generation.citation.OpenAI")
+    mock_client = mocker.MagicMock()
 
     chunks = [_make_chunk("c1", "Only one chunk.")]
     answer = "Some claim [5]."  # citation [5] but only 1 chunk
 
-    results = verify_citations(answer, chunks)
+    results = verify_citations(answer, chunks, client=mock_client)
 
     assert len(results) == 1
     assert results[0].supported == CitationStatus.UNVERIFIED
@@ -201,25 +203,74 @@ def test_verify_citations_out_of_range(mocker) -> None:
 
 def test_verify_citations_empty_answer(mocker) -> None:
     """An answer with no citations must return an empty list."""
-    mocker.patch("generation.citation.OpenAI")
+    mock_client = mocker.MagicMock()
 
     chunks = [_make_chunk("c1", "Some chunk.")]
-    results = verify_citations("No citations here.", chunks)
+    results = verify_citations("No citations here.", chunks, client=mock_client)
 
     assert results == []
 
 
 def test_verify_citations_api_error_returns_unverified(mocker) -> None:
-    """An OpenAI API error during verification must produce an UNVERIFIED entry."""
+    """Batch call failure followed by per-citation failure must produce UNVERIFIED."""
     mock_client = mocker.MagicMock()
+    # Both the batch call and the fallback per-citation call raise.
     mock_client.chat.completions.create.side_effect = RuntimeError("api down")
-    mocker.patch("generation.citation.OpenAI", return_value=mock_client)
 
     chunks = [_make_chunk("c1", "Some chunk.")]
     answer = "Some claim [1]."
 
-    results = verify_citations(answer, chunks)
+    results = verify_citations(answer, chunks, client=mock_client)
 
     assert len(results) == 1
     assert results[0].supported == CitationStatus.UNVERIFIED
     assert results[0].confidence == pytest.approx(0.0)
+
+
+def test_verify_citations_batch(mocker) -> None:
+    """All in-range citations must be verified in a single OpenAI call."""
+    import json
+
+    mock_response = mocker.MagicMock()
+    mock_response.choices[0].message.content = json.dumps([
+        {"supported": "yes", "confidence": 1.0},
+        {"supported": "no", "confidence": 1.0},
+    ])
+
+    mock_client = mocker.MagicMock()
+    mock_client.chat.completions.create.return_value = mock_response
+
+    chunks = [
+        _make_chunk("c1", "Munich is in Bavaria."),
+        _make_chunk("c2", "Berlin is in Germany."),
+    ]
+    answer = "Munich is in Bavaria [1]. Berlin is in Germany [2]."
+
+    results = verify_citations(answer, chunks, client=mock_client)
+
+    assert len(results) == 2
+    assert results[0].supported == CitationStatus.SUPPORTED
+    assert results[0].chunk_id == "c1"
+    assert results[1].supported == CitationStatus.UNSUPPORTED
+    assert results[1].chunk_id == "c2"
+    # Single API call for both citations — not one per citation.
+    assert mock_client.chat.completions.create.call_count == 1
+
+
+def test_verify_citations_fallback(mocker) -> None:
+    """Batch call failure triggers per-citation fallback; all-fail → UNVERIFIED."""
+    mock_client = mocker.MagicMock()
+    # First call (batch) raises, subsequent fallback calls also raise.
+    mock_client.chat.completions.create.side_effect = RuntimeError("batch failed")
+
+    mock_logger = mocker.patch("generation.citation.logger")
+
+    chunks = [_make_chunk("c1", "Some chunk.")]
+    answer = "Some claim [1]."
+
+    results = verify_citations(answer, chunks, client=mock_client)
+
+    assert len(results) == 1
+    assert results[0].supported == CitationStatus.UNVERIFIED
+    # Batch failure must emit a warning before falling back.
+    mock_logger.warning.assert_called()
