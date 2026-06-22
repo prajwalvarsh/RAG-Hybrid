@@ -63,7 +63,7 @@ def test_rerank_returns_top_k(mock_reranker) -> None:
         [float(i) for i in range(10)], dtype=float
     )
 
-    reranked = rerank("test query", results, rerank_top_k=5)
+    reranked = rerank("test query", results, rerank_candidate_k=10, rerank_top_k=5)
 
     assert len(reranked) == 5
 
@@ -104,8 +104,21 @@ def test_rerank_updates_score(mock_reranker) -> None:
     results = [_make_result("c1", 1, score=original_score)]
     mock_reranker.predict.return_value = np.array([reranker_score], dtype=float)
 
-    reranked = rerank("test query", results, rerank_top_k=1)
+    reranked = rerank("test query", results, rerank_candidate_k=1, rerank_top_k=1)
 
     assert len(reranked) == 1
     assert reranked[0].score == pytest.approx(reranker_score)
     assert reranked[0].score != original_score
+
+
+def test_rerank_candidate_k_caps_input(mock_reranker) -> None:
+    """Cross-encoder must only score rerank_candidate_k candidates even when more are passed."""
+    results = [_make_result(f"c{i}", i + 1) for i in range(30)]
+    mock_reranker.predict.return_value = np.array(
+        [float(i) for i in range(5)], dtype=float
+    )
+
+    rerank("test query", results, rerank_candidate_k=5, rerank_top_k=3)
+
+    passed_pairs = mock_reranker.predict.call_args[0][0]
+    assert len(passed_pairs) == 5
