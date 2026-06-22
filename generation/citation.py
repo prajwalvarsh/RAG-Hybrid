@@ -129,10 +129,12 @@ def _fill_results(
     batch_prompt = "\n".join(prompt_lines)
 
     try:
+        # 500 tokens is sufficient for up to 15 citations as JSON array.
+        # 200 was too low and caused unterminated JSON on long answers.
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": batch_prompt}],
-            max_tokens=200,
+            max_tokens=500,
         )
         raw = (response.choices[0].message.content or "").strip()
         verdicts: list[dict] = json.loads(raw)

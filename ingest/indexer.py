@@ -28,6 +28,13 @@ def index_chunks(
     These two settings are coupled — changing one without the other
     produces inconsistent retrieval results.
 
+    Metadata is built with exclude_none=True so that optional ChunkMetadata
+    fields (heading, page_number, etc.) are omitted rather than stored as
+    None. ChromaDB requires non-empty metadata dicts. When all optional
+    ChunkMetadata fields are None, we fall back to chunk_index as a
+    guaranteed non-None field from the parent Chunk, satisfying ChromaDB's
+    constraint while keeping retrieval metadata meaningful.
+
     Args:
         embedded_chunks: List of EmbeddedChunk objects to store.
         collection_name: Name of the ChromaDB collection (default "rag_hybrid").
@@ -45,7 +52,11 @@ def index_chunks(
     ids = [ec.chunk.chunk_id for ec in embedded_chunks]
     embeddings = [ec.embedding for ec in embedded_chunks]
     documents = [ec.chunk.text for ec in embedded_chunks]
-    metadatas = [ec.chunk.metadata.model_dump() for ec in embedded_chunks]
+    metadatas = [
+        ec.chunk.metadata.model_dump(exclude_none=True)
+        or {"chunk_index": ec.chunk.chunk_index}
+        for ec in embedded_chunks
+    ]
 
     collection.upsert(
         ids=ids,
