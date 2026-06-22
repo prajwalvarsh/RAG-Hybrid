@@ -18,7 +18,15 @@ data/raw/*
 # Pytest
 .pytest_cache/*
 
-
+# Environment variables
 .env
 
-IMPROVEMENTS.mdchroma_db/
+# Improvements and bugs
+IMPROVEMENTS.md
+BUGS.md
+
+# ChromaDB
+chroma_db/
+
+# evaluation results
+eval/results/*

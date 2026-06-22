@@ -19,6 +19,11 @@ dependencies = [
     "tiktoken>=0.7.0",
     "nltk>=3.8.0",
     "groq>=1.5.0",
+    "ragas==0.1.21",
+    "langchain==0.2.16",
+    "datasets>=5.0.0",
+    "langchain-openai>=0.1.25",
+    "langchain-huggingface>=0.0.3",
 ]
 
 [project.optional-dependencies]
