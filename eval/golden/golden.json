@@ -1,0 +1,92 @@
+[
+  {
+    "id": "q001",
+    "question": "What were Reliance's consolidated revenues for FY26?",
+    "expected_answer": "Reliance's consolidated revenues for FY26 stood at ₹11,75,919 crore ($124.0 billion), up 9.8% year-on-year.",
+    "type": "factual"
+  },
+  {
+    "id": "q002",
+    "question": "How many Jio subscribers has the platform crossed?",
+    "expected_answer": "The Jio user base has crossed 524 million.",
+    "type": "factual"
+  },
+  {
+    "id": "q003",
+    "question": "What is Reliance Intelligence's AI infrastructure location and power source?",
+    "expected_answer": "Reliance Intelligence is building India's sovereign AI backbone in Jamnagar, powered entirely by clean energy from Reliance's own solar generation from the Kutch renewable platform.",
+    "type": "factual"
+  },
+  {
+    "id": "q004",
+    "question": "How many stores does Reliance Retail operate and across how much area?",
+    "expected_answer": "Reliance Retail operates 20,160 stores across 78 million square feet.",
+    "type": "factual"
+  },
+  {
+    "id": "q005",
+    "question": "What rank did Jio Platforms achieve in WIPO's innovation velocity ranking?",
+    "expected_answer": "Jio Platforms jumped from rank 340 to rank 20 in just one year in terms of velocity of innovation through patents, according to the World Intellectual Property Organisation.",
+    "type": "factual"
+  },
+  {
+    "id": "q006",
+    "question": "What is the net profit for FY26 and how does it compare to the previous year?",
+    "expected_answer": "The net profit for FY26 stood at ₹95,754 crore ($10.1 billion), up 17.8% over last year.",
+    "type": "factual"
+  },
+  {
+    "id": "q007",
+    "question": "What is Campa's market position and revenue in FY26?",
+    "expected_answer": "Campa achieved ₹4,700+ crore in gross sales in FY26 and is now India's fourth-largest carbonated soft-drinks brand with a double-digit market share in key markets.",
+    "type": "factual"
+  },
+  {
+    "id": "q008",
+    "question": "How does Jio's AI infrastructure compare to H100 GPUs and what is the power capacity?",
+    "expected_answer": "Reliance Intelligence is operationalising an initial fleet of NVIDIA GB300 GPUs equivalent to more than 75,000 H100 GPUs on an AI-inference basis. The first 120 megawatts will be commissioned by end of 2026, which can scale to over two lakh H100-equivalent GPUs.",
+    "type": "multi_hop"
+  },
+  {
+    "id": "q009",
+    "question": "What is the connection between Jio's satellite initiative and India's energy independence goals?",
+    "expected_answer": "Jio is evaluating a sovereign Low Earth Orbit satellite constellation to connect remote villages and border outposts unreachable by ground network, strengthening India's atma nirbharta in space. This aligns with the broader national mission of energy and technology self-sufficiency that Reliance is pursuing across multiple business verticals.",
+    "type": "multi_hop"
+  },
+  {
+    "id": "q010",
+    "question": "What five commitments did Jio announce for its next growth chapter and how do they relate to Reliance's export ambitions?",
+    "expected_answer": "Jio's five commitments are: making JioTrue5G the foundation of India's digital leap, expanding JioAirFiber home broadband nationally, digitising Indian enterprises via JioPC, ensuring AI for everyone, and taking India's technology to the world. The fifth commitment directly supports Reliance's export ambitions by deploying Jio's proprietary deep-tech stack internationally.",
+    "type": "multi_hop"
+  },
+  {
+  "id": "q011",
+  "question": "Reliance claims to be doubling EBITDA every five years. What was the EBITDA in FY21 and FY26, and which two business segments contributed nearly half of FY26 EBITDA?",
+  "expected_answer": "FY21 EBITDA was ₹97,580 crore, which grew to ₹2,07,911 crore in FY26. Retail and Digital businesses contributed nearly half of FY26 EBITDA.",
+  "type": "multi_hop"
+  },
+  {
+    "id": "q012",
+    "question": "What is Reliance's current share price on the Bombay Stock Exchange?",
+    "expected_answer": "I cannot answer from the provided context. The document does not mention Reliance's current share price.",
+    "type": "unanswerable"
+  },
+  {
+    "id": "q013",
+    "question": "Who are Reliance's main competitors in the telecom sector?",
+    "expected_answer": "I cannot answer from the provided context. The document does not name specific telecom competitors.",
+    "type": "unanswerable"
+  },
+  {
+    "id": "q014",
+    "question": "What is Mukesh Ambani's personal net worth?",
+    "expected_answer": "I cannot answer from the provided context. The document does not mention Mukesh Ambani's personal net worth.",
+    "type": "unanswerable"
+  },
+  {
+    "id": "q015",
+    "question": "What is the interest rate on Reliance's outstanding debt?",
+    "expected_answer": "I cannot answer from the provided context. The document does not provide details on interest rates on Reliance's debt.",
+    "type": "unanswerable"
+  }
+]
