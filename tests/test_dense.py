@@ -60,7 +60,7 @@ def _mock_collection(mocker, count: int, query_response: dict):
 @pytest.fixture
 def base_request() -> RetrievalRequest:
     """A minimal RetrievalRequest used across tests."""
-    return RetrievalRequest(query="What is RAG?", top_k=3)
+    return RetrievalRequest(query="What is RAG?", retrieval_top_k=3)
 
 
 @pytest.fixture

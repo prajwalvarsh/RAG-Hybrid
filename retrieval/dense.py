@@ -30,7 +30,7 @@ def retrieve_dense(request: RetrievalRequest) -> list[RetrievalResult]:
     descending so the most relevant chunk is rank 1.
 
     Args:
-        request: RetrievalRequest containing query, top_k, and collection_name.
+        request: RetrievalRequest containing query, retrieval_top_k, and collection_name.
 
     Returns:
         List of RetrievalResult ordered by score descending with rank starting
@@ -53,7 +53,7 @@ def retrieve_dense(request: RetrievalRequest) -> list[RetrievalResult]:
 
     raw = collection.query(
         query_embeddings=[query_vector],
-        n_results=request.top_k,
+        n_results=request.retrieval_top_k,
         include=["documents", "distances", "metadatas"],
     )
 

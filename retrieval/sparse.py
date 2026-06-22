@@ -123,7 +123,7 @@ def retrieve_sparse(request: RetrievalRequest) -> list[RetrievalResult]:
     the result list with irrelevant chunks and pollute RRF fusion downstream.
 
     Args:
-        request: RetrievalRequest with query, top_k, and collection_name.
+        request: RetrievalRequest with query, retrieval_top_k, and collection_name.
 
     Returns:
         List of RetrievalResult ordered by BM25 score descending with rank
@@ -151,7 +151,7 @@ def retrieve_sparse(request: RetrievalRequest) -> list[RetrievalResult]:
     ]
     scored.sort(key=lambda t: t[2], reverse=True)
 
-    top = scored[: request.top_k]
+    top = scored[: request.retrieval_top_k]
 
     results: list[RetrievalResult] = []
     for rank_zero, (chunk_id, text, score) in enumerate(top):

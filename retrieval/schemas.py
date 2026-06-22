@@ -23,8 +23,15 @@ class RetrievalResult(BaseModel):
 
 
 class RetrievalRequest(BaseModel):
-    """Parameters for a retrieval query."""
+    """Parameters for a retrieval query.
+
+    retrieval_top_k controls how many candidates each retriever returns.
+    fusion_top_k controls how many fused results enter the reranker.
+    rerank_top_k controls how many results the reranker returns to generation.
+    """
 
     query: str
-    top_k: int = 10
+    retrieval_top_k: int = 10
+    fusion_top_k: int = 20
+    rerank_top_k: int = 5
     collection_name: str = "rag_hybrid"

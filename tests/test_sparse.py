@@ -48,7 +48,7 @@ def reset_singleton():
 @pytest.fixture
 def base_request() -> RetrievalRequest:
     """Minimal RetrievalRequest used across tests."""
-    return RetrievalRequest(query="retrieval augmented generation", top_k=3)
+    return RetrievalRequest(query="retrieval augmented generation", retrieval_top_k=3)
 
 
 @pytest.fixture
@@ -142,7 +142,7 @@ def test_bm25_force_rebuild(mocker, fake_corpus) -> None:
     ids, documents = fake_corpus
     mock_collection = _make_collection(mocker, ids, documents)
 
-    request = RetrievalRequest(query="retrieval", top_k=3)
+    request = RetrievalRequest(query="retrieval", retrieval_top_k=3)
 
     # First call builds the index.
     retrieve_sparse(request)
