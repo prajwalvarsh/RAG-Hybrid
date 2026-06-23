@@ -11,9 +11,7 @@ import os
 import time
 from datetime import datetime
 
-from dotenv import load_dotenv
-
-load_dotenv()
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +66,7 @@ def load_golden(path: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def run_pipeline(question: str) -> dict:
+def run_pipeline(question: str, collection_name: str | None = None) -> dict:
     """Execute the full RAG pipeline for one question.
 
     Stages: embed → dense retrieval → sparse retrieval → RRF fusion →
@@ -81,12 +79,17 @@ def run_pipeline(question: str) -> dict:
       - Generation fails → log error, return {}.
 
     Args:
-        question: Natural-language query.
+        question:        Natural-language query.
+        collection_name: ChromaDB collection to query. Defaults to
+                         settings.default_collection.
 
     Returns:
         Dict with keys question, answer, citations, support_score,
         retrieved_chunks, retrieval_method.  Empty dict on fatal failure.
     """
+    if collection_name is None:
+        collection_name = settings.default_collection
+
     # Lazy imports keep module-level load time low and allow tests to mock them.
     from generation.generator import generate
     from ingest.model import get_embedding_model
@@ -102,10 +105,10 @@ def run_pipeline(question: str) -> dict:
 
     request = RetrievalRequest(
         query=question,
-        retrieval_top_k=50,
-        fusion_top_k=20,
-        rerank_top_k=5,
-        collection_name="rag_hybrid",
+        retrieval_top_k=settings.retrieval_top_k,
+        fusion_top_k=settings.fusion_top_k,
+        rerank_top_k=settings.rerank_top_k,
+        collection_name=collection_name,
     )
 
     dense_results = []
@@ -165,16 +168,17 @@ def _build_ragas_llm():
 
     Wraps ChatOpenAI (pointed at Groq's endpoint) in a LangchainLLMWrapper so
     RAGAS can call it for faithfulness, answer_relevancy, and context_recall.
-    Reuses the same GROQ_API_KEY and model already used by the generation module.
+    Reads llm_api_key, llm_api_base, and llm_model from the central settings
+    singleton so values stay in sync with the generation module.
     """
     from langchain_openai import ChatOpenAI
     from ragas.llms import LangchainLLMWrapper
 
     return LangchainLLMWrapper(
         ChatOpenAI(
-            model="llama-3.1-8b-instant",
-            openai_api_key=os.environ.get("GROQ_API_KEY", ""),
-            openai_api_base="https://api.groq.com/openai/v1",
+            model=settings.llm_model,
+            openai_api_key=settings.llm_api_key,
+            openai_api_base=settings.llm_api_base,
         )
     )
 
@@ -322,15 +326,41 @@ def save_results(
 
 
 def main() -> None:
-    """Load golden set, run the pipeline on every question, evaluate with RAGAS,
-    save results, and print a pass/fail summary table to stdout."""
+    """Parse CLI args, load golden set, run the pipeline, evaluate with RAGAS,
+    save results, and print a pass/fail summary table to stdout.
+
+    CLI flags
+    ---------
+    --limit N        Run only the first N questions (0 = all, default: settings.eval_limit).
+    --collection S   ChromaDB collection name (default: settings.default_collection).
+    """
+    import argparse
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
     )
 
-    golden_path = os.path.join("eval", "golden", "golden.json")
-    golden = load_golden(golden_path)
+    parser = argparse.ArgumentParser(description="RAG Hybrid eval runner")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=settings.eval_limit,
+        help="Run only the first N questions (0 = all).",
+    )
+    parser.add_argument(
+        "--collection",
+        type=str,
+        default=settings.default_collection,
+        help="ChromaDB collection name to query.",
+    )
+    args = parser.parse_args()
+
+    golden = load_golden(settings.golden_path)
+
+    if args.limit > 0:
+        golden = golden[: args.limit]
+        logger.info("--limit %d: restricting to %d questions", args.limit, len(golden))
 
     logger.info("Running pipeline on %d questions", len(golden))
     results: list[dict] = []
@@ -341,7 +371,7 @@ def main() -> None:
             entry["type"],
             entry["question"][:80],
         )
-        result = run_pipeline(entry["question"])
+        result = run_pipeline(entry["question"], collection_name=args.collection)
 
         # Annotate with id/type for the summary table and saved output.
         if result:
@@ -362,7 +392,7 @@ def main() -> None:
         results.append(result)
         # Groq free tier caps at ~30 req/min; sleep between questions to
         # avoid 429s from citation verification and generation calls.
-        time.sleep(3)
+        time.sleep(settings.eval_sleep_seconds)
 
     scores = evaluate_with_ragas(results, golden)
     save_results(results, scores)
