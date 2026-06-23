@@ -2,14 +2,12 @@
 
 import logging
 
-from dotenv import load_dotenv
 from groq import Groq
 
+from config import settings
 from generation.citation import compute_support_score, verify_citations
 from generation.schemas import GenerationResult
 from retrieval.schemas import RetrievalMethod, RetrievalResult
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +60,7 @@ def build_prompt(query: str, chunks: list[RetrievalResult]) -> str:
 def generate(
     query: str,
     chunks: list[RetrievalResult],
-    model: str = "llama-3.1-8b-instant",
+    model: str | None = None,
 ) -> GenerationResult:
     """Generate a grounded answer and verify every citation it contains.
 
@@ -80,13 +78,16 @@ def generate(
     Args:
         query:  The user's question.
         chunks: Ranked retrieval results to ground the answer.
-        model:  Groq model identifier (default: "llama-3.1-8b-instant").
+        model:  Groq model identifier. Defaults to settings.llm_model.
 
     Returns:
         GenerationResult with the answer, citation audit, and metadata.
     """
+    if model is None:
+        model = settings.llm_model
+
     prompt = build_prompt(query, chunks)
-    client = Groq()
+    client = Groq(api_key=settings.llm_api_key or None)
 
     logger.info("Calling Groq model=%s for query: %r", model, query)
 
