@@ -9,6 +9,7 @@ Environment variables are loaded from a ``.env`` file at the project root
 to the default defined on the model.
 """
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,8 +20,11 @@ class Settings(BaseSettings):
     # LLM — Groq OpenAI-compatible endpoint
     # ------------------------------------------------------------------
 
-    llm_api_key: str = ""
-    """GROQ_API_KEY (or any OpenAI-compatible key)."""
+    llm_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("LLM_API_KEY", "GROQ_API_KEY"),
+    )
+    """GROQ_API_KEY or LLM_API_KEY (both accepted)."""
 
     llm_api_base: str = "https://api.groq.com/openai/v1"
     """Base URL for the LLM API endpoint."""
