@@ -25,6 +25,9 @@ dependencies = [
     "langchain-openai>=0.1.25",
     "langchain-huggingface>=0.0.3",
     "httpx>=0.28.1",
+    "streamlit>=1.58.0",
+    "requests>=2.34.2",
+    "python-multipart>=0.0.32",
 ]
 
 [project.optional-dependencies]
