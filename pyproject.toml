@@ -3,7 +3,7 @@ name = "rag-hybrid"
 version = "0.1.0"
 description = "Production-grade RAG system with hybrid search (dense vector + sparse BM25)"
 authors = [{name = "Prajwal Amoghavarsh", email = "prajwalvarsh55@gmail.com"}]
-readme = "docs/README.md"
+readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "pypdf>=4.0.0",

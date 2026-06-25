@@ -1,0 +1,23 @@
+# ChromaDB index — persisted via a named volume in docker-compose.yml
+chroma_db/
+
+# Source documents — persisted via a named volume in docker-compose.yml
+data/raw/
+
+# Virtual environment — recreated inside the image by uv sync
+.venv/
+
+# Python bytecode
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Secrets — injected at runtime via env_file, must never be baked into the image
+.env
+
+# Evaluation results (large, not needed at runtime)
+eval/results/
+
+# Git history
+.git/
+.gitignore
