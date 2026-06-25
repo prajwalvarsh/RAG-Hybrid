@@ -24,6 +24,7 @@ dependencies = [
     "datasets>=5.0.0",
     "langchain-openai>=0.1.25",
     "langchain-huggingface>=0.0.3",
+    "httpx>=0.28.1",
 ]
 
 [project.optional-dependencies]
