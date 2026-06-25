@@ -11,10 +11,15 @@ from retrieval.schemas import RetrievalMethod, RetrievalResult
 
 logger = logging.getLogger(__name__)
 
+
 _GROUNDING_INSTRUCTIONS = (
     "You are a precise question-answering assistant. "
     "Answer the question using ONLY the numbered context chunks provided below. "
     "Cite every factual claim with the chunk number in square brackets, e.g. [1]. "
+    "Answer directly and concisely — do not begin with phrases like "
+    "'According to the provided context' or 'Based on the context'. "
+    "Do not infer, calculate, or combine facts across chunks — "
+    "only state what is explicitly written in the chunks. "
     "If the answer cannot be found in the provided context, respond with exactly: "
     '"I cannot answer from the provided context." '
     "Do not use any knowledge outside the provided chunks."
