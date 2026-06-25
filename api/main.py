@@ -7,15 +7,27 @@ Exposes three endpoints:
 """
 
 import logging
+import tempfile
 import time
+from pathlib import Path
 
 import chromadb
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Form, HTTPException, UploadFile
 
-from api.schemas import CitationResponse, QueryRequest, QueryResponse
+from api.schemas import (
+    CitationResponse,
+    FileIngestResult,
+    IngestResponse,
+    QueryRequest,
+    QueryResponse,
+)
 from config import settings
 from eval.runner import run_pipeline
-from ingest.indexer import _CHROMA_PATH
+from ingest.chunker import chunk_document
+from ingest.embedder import embed_chunks
+from ingest.indexer import _CHROMA_PATH, index_chunks
+from ingest.loader import load_document
+from ingest.schemas import ChunkStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +164,194 @@ async def health() -> dict:
         "default_collection": settings.default_collection,
         "collections": counts,
     }
+
+
+_ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md"}
+_MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _ingest_one(
+    content: bytes,
+    filename: str,
+    collection_name: str,
+    strategy: ChunkStrategy,
+) -> FileIngestResult:
+    """Run the full ingest pipeline for a single file's content.
+
+    Writes content to a NamedTemporaryFile, then executes
+    load → chunk → embed → index sequentially, removing the temp file
+    in a finally block regardless of success or failure.
+
+    Args:
+        content:         Raw bytes already read from the upload.
+        filename:        Original filename — used only for logging and the
+                         result record; the actual file extension determines
+                         the loader branch.
+        collection_name: ChromaDB collection to write chunks into.
+        strategy:        Chunking strategy to apply.
+
+    Returns:
+        FileIngestResult with status "success" and populated chunk_count,
+        or status "error" with a reason string if any pipeline stage raises.
+    """
+    ext = Path(filename).suffix.lower()
+    t_start = time.perf_counter()
+    tmp_path: Path | None = None
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=ext, prefix="rag_ingest_"
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = Path(tmp.name)
+
+        logger.info("Saved %s to temp path %s", filename, tmp_path)
+
+        t0 = time.perf_counter()
+        document = load_document(str(tmp_path))
+        logger.info("load_document %s: %.1f ms", filename, (time.perf_counter() - t0) * 1000)
+
+        t0 = time.perf_counter()
+        chunks = chunk_document(document, strategy)
+        logger.info(
+            "chunk_document %s (%s): %d chunks in %.1f ms",
+            filename,
+            strategy.value,
+            len(chunks),
+            (time.perf_counter() - t0) * 1000,
+        )
+
+        t0 = time.perf_counter()
+        embedded = embed_chunks(chunks)
+        logger.info("embed_chunks %s: %.1f ms", filename, (time.perf_counter() - t0) * 1000)
+
+        t0 = time.perf_counter()
+        index_chunks(embedded, collection_name=collection_name)
+        logger.info("index_chunks %s: %.1f ms", filename, (time.perf_counter() - t0) * 1000)
+
+        elapsed_ms = round((time.perf_counter() - t_start) * 1000, 2)
+        logger.info(
+            "Ingest success | file=%s | collection=%s | chunks=%d | elapsed=%.1f ms",
+            filename,
+            collection_name,
+            len(embedded),
+            elapsed_ms,
+        )
+        return FileIngestResult(
+            filename=filename,
+            collection_name=collection_name,
+            strategy=strategy,
+            chunk_count=len(embedded),
+            elapsed_ms=elapsed_ms,
+            status="success",
+        )
+
+    except Exception as exc:
+        elapsed_ms = round((time.perf_counter() - t_start) * 1000, 2)
+        logger.error("Ingest failed for %s: %s", filename, exc, exc_info=True)
+        return FileIngestResult(
+            filename=filename,
+            collection_name=collection_name,
+            strategy=strategy,
+            chunk_count=0,
+            elapsed_ms=elapsed_ms,
+            status="error",
+            error=str(exc),
+        )
+
+    finally:
+        if tmp_path and tmp_path.exists():
+            tmp_path.unlink()
+            logger.debug("Removed temp file %s", tmp_path)
+
+
+@app.post("/ingest", response_model=IngestResponse)
+async def ingest(
+    files: list[UploadFile],
+    collection_name: str = Form(...),
+    strategy: ChunkStrategy = Form(...),
+) -> IngestResponse:
+    """Ingest one or more uploaded documents into a ChromaDB collection.
+
+    Accepts a multipart batch of file uploads (pdf, txt, or md) with a
+    shared collection name and chunking strategy as form fields.  Files are
+    processed sequentially.  Per-file validation (extension and 10 MB size
+    limit) produces an error entry in the results list rather than an HTTP
+    error code so that partial-success batches can be reported cleanly.
+
+    Args:
+        files:           One or more uploaded files — each must be .pdf,
+                         .txt, or .md and at most 10 MB.
+        collection_name: ChromaDB collection to write all chunks into.
+        strategy:        Chunking strategy applied to every file in the batch.
+
+    Returns:
+        IngestResponse with a FileIngestResult per uploaded file, each
+        carrying its own status, chunk_count, and elapsed_ms.
+    """
+    logger.info(
+        "POST /ingest | files=%d | collection=%s | strategy=%s",
+        len(files),
+        collection_name,
+        strategy.value,
+    )
+
+    results: list[FileIngestResult] = []
+
+    for upload in files:
+        filename = upload.filename or "upload"
+        ext = Path(filename).suffix.lower()
+
+        logger.info("Processing file %d/%d: %s", len(results) + 1, len(files), filename)
+
+        # --- extension validation ---
+        if ext not in _ALLOWED_EXTENSIONS:
+            logger.warning("Skipping %s — unsupported extension '%s'", filename, ext)
+            results.append(
+                FileIngestResult(
+                    filename=filename,
+                    collection_name=collection_name,
+                    strategy=strategy,
+                    chunk_count=0,
+                    elapsed_ms=0.0,
+                    status="error",
+                    error=(
+                        f"Unsupported file type '{ext}'. "
+                        f"Allowed: {sorted(_ALLOWED_EXTENSIONS)}"
+                    ),
+                )
+            )
+            continue
+
+        content = await upload.read()
+
+        # --- size validation ---
+        if len(content) > _MAX_FILE_BYTES:
+            size_mb = len(content) / (1024 * 1024)
+            logger.warning("Skipping %s — %.1f MB exceeds 10 MB limit", filename, size_mb)
+            results.append(
+                FileIngestResult(
+                    filename=filename,
+                    collection_name=collection_name,
+                    strategy=strategy,
+                    chunk_count=0,
+                    elapsed_ms=0.0,
+                    status="error",
+                    error=f"File size {size_mb:.1f} MB exceeds the 10 MB limit.",
+                )
+            )
+            continue
+
+        result = _ingest_one(content, filename, collection_name, strategy)
+        results.append(result)
+
+    logger.info(
+        "Batch complete | total=%d | success=%d | error=%d",
+        len(results),
+        sum(1 for r in results if r.status == "success"),
+        sum(1 for r in results if r.status == "error"),
+    )
+    return IngestResponse(files=results)
 
 
 @app.get("/collections")
