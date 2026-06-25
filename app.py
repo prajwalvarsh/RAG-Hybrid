@@ -6,11 +6,15 @@ Connects to the FastAPI backend at BASE_URL and provides two tabs:
 """
 
 import logging
+import os
 
 import requests
 import streamlit as st
 
-BASE_URL = "http://localhost:8000"
+# Allow the Docker Compose 'streamlit' service to override this via the
+# BASE_URL environment variable so it can reach the 'api' container by
+# service name instead of localhost.
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
 
 logger = logging.getLogger(__name__)
 
